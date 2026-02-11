@@ -1,12 +1,21 @@
 from fastapi import FastAPI, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from database import engine, SessionLocal
 from models import Base, Expense
 import joblib
 import os
 
-
 app = FastAPI(title="Expense Tracker API")
+
+# ✅ CORS MUST BE RIGHT AFTER FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
@@ -17,7 +26,6 @@ MODEL_PATH = os.path.join(BASE_DIR, "expense_category_model.pkl")
 
 model = joblib.load(MODEL_PATH)
 
-
 # Database dependency
 def get_db():
     db = SessionLocal()
@@ -26,11 +34,9 @@ def get_db():
     finally:
         db.close()
 
-
 @app.get("/")
 def home():
     return {"status": "Expense Tracker backend running"}
-
 
 @app.post("/expenses")
 def add_expense(
@@ -48,7 +54,6 @@ def add_expense(
     db.commit()
     db.refresh(expense)
     return expense
-
 
 @app.get("/expenses")
 def get_expenses(db: Session = Depends(get_db)):
