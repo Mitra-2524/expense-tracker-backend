@@ -11,11 +11,15 @@ app = FastAPI(title="Expense Tracker API")
 # ✅ CORS MUST BE RIGHT AFTER FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "https://extraordinary-hamster-a3e7af.netlify.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Create database tables
 Base.metadata.create_all(bind=engine)
