@@ -12,6 +12,31 @@ const API_BASE = "https://expense-tracker-backend-91nt.onrender.com";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff8042"];
 
+// ✅ Rule-based fallback / correction
+const detectCategory = (description) => {
+  const desc = description.toLowerCase();
+
+  if (
+    desc.includes("travel") ||
+    desc.includes("petrol") ||
+    desc.includes("uber") ||
+    desc.includes("bus")
+  ) {
+    return "Travel";
+  } 
+  else if (
+    desc.includes("food") ||
+    desc.includes("pizza") ||
+    desc.includes("burger") ||
+    desc.includes("restaurant")
+  ) {
+    return "Food";
+  } 
+  else {
+    return "Other";
+  }
+};
+
 export default function App() {
   const [data, setData] = useState(null);
   const [amount, setAmount] = useState("");
@@ -40,20 +65,29 @@ export default function App() {
     fetchExpenses();
   }, []);
 
-  // 🔹 Add expense (ML predicts category automatically)
+  // 🔹 Add expense
   const addExpense = async () => {
     if (!description || !amount) return;
 
-    // 1️⃣ Predict category
+    // 1️⃣ Predict category from backend (ML)
     const predictRes = await fetch(
       `${API_BASE}/predict-category?description=${description}`,
       { method: "POST" }
     );
     const predictData = await predictRes.json();
 
-    // 2️⃣ Add expense
+    // 2️⃣ Rule-based correction
+    const correctedCategory = detectCategory(description);
+
+    // If ML says "Food" but rules say "Travel" → fix it
+    const finalCategory =
+      correctedCategory !== "Other"
+        ? correctedCategory
+        : predictData.predicted_category;
+
+    // 3️⃣ Add expense
     await fetch(
-      `${API_BASE}/expenses?amount=${amount}&category=${predictData.predicted_category}&description=${description}`,
+      `${API_BASE}/expenses?amount=${amount}&category=${finalCategory}&description=${description}`,
       { method: "POST" }
     );
 
@@ -84,7 +118,7 @@ export default function App() {
       {/* Add Expense */}
       <h3>Add Expense</h3>
       <input
-        placeholder="Description"
+        placeholder="e.g. Food, Pizza, Travel, Petrol"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         style={{ marginRight: 8 }}
@@ -128,4 +162,3 @@ export default function App() {
     </div>
   );
 }
-
